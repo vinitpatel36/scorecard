@@ -3,68 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hari Sumiran Volleyball Scoreboard</title>
+    <title>Volleyball Scoreboard</title>
     <link rel="stylesheet" href="style.css">
     <!-- html2canvas library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-    <h1>Hari Sumiran Volleyball Scoreboard</h1>
+    <h1>Volleyball Scoreboard</h1>
 
     <!-- Settings Section -->
     <div id="settings" class="container settings-container">
         <h2>Match Settings</h2>
         <!-- Set/Point Settings -->
-        <div class="setting-item">
-            <label for="totalSets">Best of:</label>
-            <select id="totalSets">
-                <option value="1">1 Set</option>
-                <option value="3" selected>3 Sets</option>
-                <option value="5">5 Sets</option>
-            </select>
-        </div>
-        <div class="setting-item">
-            <label for="pointsPerSet">Points per Set (Regular):</label>
-            <input type="number" id="pointsPerSet" value="15" min="1">
-        </div>
-         <div class="setting-item">
-            <label for="pointsFinalSet">Points for Final Set:</label>
-            <input type="number" id="pointsFinalSet" value="15" min="1">
-        </div>
+        <div class="setting-item"> <label for="totalSets">Best of:</label> <select id="totalSets"> <option value="1">1 Set</option> <option value="3" selected>3 Sets</option> <option value="5">5 Sets</option> </select> </div>
+        <div class="setting-item"> <label for="pointsPerSet">Points per Set (Regular):</label> <input type="number" id="pointsPerSet" value="25" min="1"> </div>
+        <div class="setting-item"> <label for="pointsFinalSet">Points for Final Set:</label> <input type="number" id="pointsFinalSet" value="15" min="1"> </div>
         <hr>
         <!-- Team Setup -->
         <div class="team-setup">
-            <!-- Team A Input -->
             <div class="team-input">
                 <h3>Team A</h3>
-                <div class="setting-item team-preset-select">
-                     <label for="selectTeamA">Load Preset:</label>
-                     <select id="selectTeamA">
-                         <option value="manual" selected>-- Manual Input --</option>
-                         <!-- Options populated by JS -->
-                     </select>
-                </div>
-                <label for="teamAName">Name:</label>
-                <input type="text" id="teamAName" value="Team A">
-                <label for="teamAPlayers">Players (one per line):</label>
-                <textarea id="teamAPlayers" rows="6" placeholder="Player 1
+                <div class="setting-item team-preset-select"> <label for="selectTeamA">Load Preset:</label> <select id="selectTeamA"> <option value="manual" selected>-- Manual Input --</option> </select> </div>
+                <label for="teamAName">Name:</label> <input type="text" id="teamAName" value="Team A">
+                <label for="teamAPlayers">Players (one per line):</label> <textarea id="teamAPlayers" rows="6" placeholder="Player 1
 Player 2
 ..."></textarea>
             </div>
-            <!-- Team B Input -->
             <div class="team-input">
                 <h3>Team B</h3>
-                 <div class="setting-item team-preset-select">
-                     <label for="selectTeamB">Load Preset:</label>
-                     <select id="selectTeamB">
-                          <option value="manual" selected>-- Manual Input --</option>
-                         <!-- Options populated by JS -->
-                     </select>
-                 </div>
-                <label for="teamBName">Name:</label>
-                <input type="text" id="teamBName" value="Team B">
-                <label for="teamBPlayers">Players (one per line):</label>
-                <textarea id="teamBPlayers" rows="6" placeholder="Player 1
+                 <div class="setting-item team-preset-select"> <label for="selectTeamB">Load Preset:</label> <select id="selectTeamB"> <option value="manual" selected>-- Manual Input --</option> </select> </div>
+                <label for="teamBName">Name:</label> <input type="text" id="teamBName" value="Team B">
+                <label for="teamBPlayers">Players (one per line):</label> <textarea id="teamBPlayers" rows="6" placeholder="Player 1
 Player 2
 ..."></textarea>
             </div>
@@ -77,18 +46,8 @@ Player 2
         <h2 id="matchTitle">Match: <span id="displayTeamAName">Team A</span> vs <span id="displayTeamBName">Team B</span></h2>
         <p class="set-info">Set <span id="currentSetNum">1</span> of <span id="maxSetsDisplay">3</span> | Target: <span id="targetPoints">25</span> points</p>
         <div class="score-display">
-            <div class="team-score team-a">
-                <h3 id="scoreTeamAName">Team A</h3>
-                <div class="points" id="teamAScore">0</div>
-                <div class="sets-won">Sets: <span id="teamASets">0</span></div>
-                <button class="point-btn" data-team="A">+1 Point</button>
-            </div>
-            <div class="team-score team-b">
-                <h3 id="scoreTeamBName">Team B</h3>
-                <div class="points" id="teamBScore">0</div>
-                <div class="sets-won">Sets: <span id="teamBSets">0</span></div>
-                 <button class="point-btn" data-team="B">+1 Point</button>
-            </div>
+            <div class="team-score team-a"> <h3 id="scoreTeamAName">Team A</h3> <div class="points" id="teamAScore">0</div> <div class="sets-won">Sets: <span id="teamASets">0</span></div> <button class="point-btn" data-team="A">+1 Point</button> </div>
+            <div class="team-score team-b"> <h3 id="scoreTeamBName">Team B</h3> <div class="points" id="teamBScore">0</div> <div class="sets-won">Sets: <span id="teamBSets">0</span></div> <button class="point-btn" data-team="B">+1 Point</button> </div>
         </div>
          <div id="lastPointInfo" class="last-point-info">Last point: N/A</div>
          <button id="undoPointBtn" class="utility-btn" disabled>Undo Last Point</button>
@@ -96,19 +55,10 @@ Player 2
 
     <!-- Player Stats Section (Live) -->
     <div id="playerStats" class="container player-stats-container hidden">
-        <div class="stats-header">
-             <h2>Player Stats</h2>
-             <button id="undoDefenceBtn" class="utility-btn utility-btn-header-action" disabled>Undo Last Defence</button>
-         </div>
+        <div class="stats-header"> <h2>Player Stats</h2> <button id="undoDefenceBtn" class="utility-btn utility-btn-header-action" disabled>Undo Last Defence</button> </div>
         <div class="player-lists">
-            <div class="player-list team-a-players">
-                <h3 id="statsTeamAName">Team A Players</h3>
-                <ul id="teamAPlayerList"></ul>
-            </div>
-            <div class="player-list team-b-players">
-                 <h3 id="statsTeamBName">Team B Players</h3>
-                 <ul id="teamBPlayerList"></ul>
-            </div>
+            <div class="player-list team-a-players"> <h3 id="statsTeamAName">Team A Players</h3> <ul id="teamAPlayerList"></ul> </div>
+            <div class="player-list team-b-players"> <h3 id="statsTeamBName">Team B Players</h3> <ul id="teamBPlayerList"></ul> </div>
         </div>
     </div>
 
@@ -116,36 +66,30 @@ Player 2
     <div id="gameOver" class="container game-over-container hidden">
         <h2>Match Over!</h2>
         <p id="winnerMessage"></p>
-        <p id="finalScore"></p>
+        <p id="finalScore"></p> <!-- Overall sets won -->
+        <hr class="divider">
+        <!-- NEW Section for Set Scores -->
+        <h3>Set Scores</h3>
+        <div id="finalSetScores" class="final-set-scores-display">
+            <!-- Scores populated by JS -->
+        </div>
+        <hr class="divider">
         <p id="playerOfTheMatch"></p>
         <hr class="divider">
         <h3>Final Player Statistics</h3>
         <div id="finalPlayerStats" class="final-stats-display">
-            <div class="final-stats-team">
-                <h4 id="finalStatsTeamAName">Team A</h4>
-                <ul id="finalStatsListA"></ul>
-            </div>
-             <div class="final-stats-team">
-                <h4 id="finalStatsTeamBName">Team B</h4>
-                 <ul id="finalStatsListB"></ul>
-            </div>
+            <div class="final-stats-team"> <h4 id="finalStatsTeamAName">Team A</h4> <ul id="finalStatsListA"></ul> </div>
+            <div class="final-stats-team"> <h4 id="finalStatsTeamBName">Team B</h4> <ul id="finalStatsListB"></ul> </div>
         </div>
-         <hr class="divider">
-         <div class="game-over-actions">
-             <button id="downloadResultsBtn" class="utility-btn utility-btn-download" disabled>Download Results</button>
-             <button id="newGameSettingsBtn" class="utility-btn">New Game (Settings)</button>
-        </div>
+        <hr class="divider">
+         <div class="game-over-actions"> <button id="downloadResultsBtn" class="utility-btn utility-btn-download" disabled>Download Results</button> <button id="newGameSettingsBtn" class="utility-btn">New Game (Settings)</button> </div>
     </div>
 
     <!-- Point Scorer Modal -->
     <div id="pointScorerModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3>Who scored the point?</h3>
-            <p>Select player from <strong id="modalTeamName">Team</strong>:</p>
-            <div class="modal-player-lists">
-                 <ul id="modalPlayerListA" class="modal-player-list hidden"></ul>
-                 <ul id="modalPlayerListB" class="modal-player-list hidden"></ul>
-            </div>
+            <h3>Who scored the point?</h3> <p>Select player from <strong id="modalTeamName">Team</strong>:</p>
+            <div class="modal-player-lists"> <ul id="modalPlayerListA" class="modal-player-list hidden"></ul> <ul id="modalPlayerListB" class="modal-player-list hidden"></ul> </div>
             <button id="cancelPointSelectionBtn" class="utility-btn utility-btn-cancel">Cancel</button>
         </div>
     </div>
