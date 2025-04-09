@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Check for html2canvas library ---
+    // Check for html2canvas
     if (typeof html2canvas === 'undefined') {
-        console.warn("html2canvas library is not loaded. Download feature will be disabled.");
+        console.warn("html2canvas library not loaded. Download feature will be disabled.");
     }
 
-    // --- Predefined Team Data ---
+    // Predefined Team Data
     const PREDEFINED_TEAMS = [
         {
             teamName: "Purshottam Hawks", 
@@ -176,23 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
           }
     ];
 
-    // --- DOM Elements ---
+    // DOM Elements
     const settingsDiv = document.getElementById('settings');
     const scoreboardDiv = document.getElementById('scoreboard');
     const playerStatsDiv = document.getElementById('playerStats');
     const gameOverDiv = document.getElementById('gameOver');
-    // Settings Elements
     const totalSetsSelect = document.getElementById('totalSets');
     const pointsPerSetInput = document.getElementById('pointsPerSet');
     const pointsFinalSetInput = document.getElementById('pointsFinalSet');
-    const selectTeamA = document.getElementById('selectTeamA'); // New Select
-    const selectTeamB = document.getElementById('selectTeamB'); // New Select
+    const selectTeamA = document.getElementById('selectTeamA');
+    const selectTeamB = document.getElementById('selectTeamB');
     const teamANameInput = document.getElementById('teamAName');
     const teamBNameInput = document.getElementById('teamBName');
     const teamAPlayersTextarea = document.getElementById('teamAPlayers');
     const teamBPlayersTextarea = document.getElementById('teamBPlayers');
     const startGameBtn = document.getElementById('startGameBtn');
-    // Scoreboard Elements
     const matchTitle = document.getElementById('matchTitle');
     const displayTeamAName = document.getElementById('displayTeamAName');
     const displayTeamBName = document.getElementById('displayTeamBName');
@@ -208,15 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pointButtons = document.querySelectorAll('.point-btn');
     const undoPointBtn = document.getElementById('undoPointBtn');
     const lastPointInfo = document.getElementById('lastPointInfo');
-    // Player Stats (Live) Elements
     const statsTeamANameH3 = document.getElementById('statsTeamAName');
     const statsTeamBNameH3 = document.getElementById('statsTeamBName');
     const teamAPlayerListUL = document.getElementById('teamAPlayerList');
     const teamBPlayerListUL = document.getElementById('teamBPlayerList');
     const undoDefenceBtn = document.getElementById('undoDefenceBtn');
-    // Game Over Elements
     const winnerMessageP = document.getElementById('winnerMessage');
     const finalScoreP = document.getElementById('finalScore');
+    const finalSetScoresDiv = document.getElementById('finalSetScores'); // New Div for set scores
     const playerOfTheMatchP = document.getElementById('playerOfTheMatch');
     const finalStatsDiv = document.getElementById('finalPlayerStats');
     const finalStatsTeamANameH4 = document.getElementById('finalStatsTeamAName');
@@ -225,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalStatsListBUL = document.getElementById('finalStatsListB');
     const newGameSettingsBtn = document.getElementById('newGameSettingsBtn');
     const downloadResultsBtn = document.getElementById('downloadResultsBtn');
-    // Modal Elements
     const pointScorerModal = document.getElementById('pointScorerModal');
     const modalTeamName = document.getElementById('modalTeamName');
     const modalPlayerListA = document.getElementById('modalPlayerListA');
@@ -233,82 +229,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelPointSelectionBtn = document.getElementById('cancelPointSelectionBtn');
 
     // --- Game State Variables ---
-    let gameState = { /* Initial state structure */ };
+    let gameState = {
+        teamAScore: 0, teamBScore: 0, teamASets: 0, teamBSets: 0,
+        currentSet: 1, totalSets: 3, pointsToWinSet: 25, pointsToWinFinalSet: 15,
+        teamAName: "Team A", teamBName: "Team B",
+        playersA: [], playersB: [],
+        gameOver: false, matchStarted: false, selectingScorer: false,
+        history: [], defenceHistory: [], lastScorer: null,
+        setResults: [] // NEW: Array to store {setNumber, scoreA, scoreB}
+    };
 
     // --- Helper Functions ---
     const deepCopy = obj => JSON.parse(JSON.stringify(obj || null));
     const parsePlayerNames = txt => txt.split('\n').map(n => n.trim()).filter(n => n).map(name => ({ name, defences: 0, points: 0 }));
 
-    // --- NEW: Populate Team Selectors ---
-    function populateTeamSelectors() {
+    // --- Team Preset Functions ---
+    function populateTeamSelectors() { /* ... same as previous ... */
         PREDEFINED_TEAMS.forEach((team, index) => {
-            const optionA = document.createElement('option');
-            optionA.value = index; // Use index as value
-            optionA.textContent = team.teamName;
-            selectTeamA.appendChild(optionA);
-
-            const optionB = document.createElement('option');
-            optionB.value = index;
-            optionB.textContent = team.teamName;
-            selectTeamB.appendChild(optionB);
+            const optionA = document.createElement('option'); optionA.value = index; optionA.textContent = team.teamName; selectTeamA.appendChild(optionA);
+            const optionB = document.createElement('option'); optionB.value = index; optionB.textContent = team.teamName; selectTeamB.appendChild(optionB);
         });
     }
-
-    // --- NEW: Handle Team Selection Change ---
-    function handleTeamSelectionChange(event) {
-        const selectElement = event.target;
-        const selectedIndex = selectElement.value;
+    function handleTeamSelectionChange(event) { /* ... same as previous ... */
+        const selectElement = event.target; const selectedIndex = selectElement.value;
         const isTeamA = selectElement.id === 'selectTeamA';
         const nameInput = isTeamA ? teamANameInput : teamBNameInput;
         const playersTextarea = isTeamA ? teamAPlayersTextarea : teamBPlayersTextarea;
-
-        if (selectedIndex === 'manual') {
-            // If user selects "Manual Input", do nothing to the fields
-            // They might have edited a preset and want to keep it manual now
-            return;
-        }
-
+        if (selectedIndex === 'manual') { return; } // Do nothing if manual selected
         const teamData = PREDEFINED_TEAMS[parseInt(selectedIndex, 10)];
-        if (teamData) {
-            nameInput.value = teamData.teamName;
-            playersTextarea.value = teamData.players.join('\n');
-        }
+        if (teamData) { nameInput.value = teamData.teamName; playersTextarea.value = teamData.players.join('\n'); }
     }
-
 
     // --- Core Game Logic Functions ---
 
     function resetGameToSettings() {
-        // Reset state, keep config inputs
         Object.assign(gameState, {
             teamAScore: 0, teamBScore: 0, teamASets: 0, teamBSets: 0, currentSet: 1,
             gameOver: false, matchStarted: false, selectingScorer: false,
             history: [], defenceHistory: [], lastScorer: null, playersA: [], playersB: [],
+            setResults: [], // Reset set results array
             totalSets: parseInt(totalSetsSelect.value, 10) || 3, pointsToWinSet: parseInt(pointsPerSetInput.value, 10) || 25,
             pointsToWinFinalSet: parseInt(pointsFinalSetInput.value, 10) || 15,
-            // Read team names from inputs - could be manual or loaded from preset
             teamAName: teamANameInput.value || "Team A", teamBName: teamBNameInput.value || "Team B",
         });
-
-        // Clear dynamic UI elements related to gameplay
-        [teamAPlayerListUL, teamBPlayerListUL, modalPlayerListA, modalPlayerListB, finalStatsListAUL, finalStatsListBUL].forEach(el => { if (el) el.innerHTML = ''; });
-        if (lastPointInfo) lastPointInfo.textContent = 'Last point: N/A';
-
-        // Reset preset dropdowns to manual (optional, could leave them selected)
-        selectTeamA.value = 'manual';
-        selectTeamB.value = 'manual';
-
-        // Update visibility
-        if (settingsDiv) settingsDiv.classList.remove('hidden');
-        [scoreboardDiv, playerStatsDiv, gameOverDiv, pointScorerModal].forEach(el => { if (el) el.classList.add('hidden'); });
-
+        // Clear UI elements
+        [teamAPlayerListUL, teamBPlayerListUL, modalPlayerListA, modalPlayerListB, finalStatsListAUL, finalStatsListBUL, finalSetScoresDiv].forEach(el => { if(el) el.innerHTML = ''; }); // Also clear set scores div
+        if(lastPointInfo) lastPointInfo.textContent = 'Last point: N/A';
+        selectTeamA.value = 'manual'; selectTeamB.value = 'manual';
+        if(settingsDiv) settingsDiv.classList.remove('hidden');
+        [scoreboardDiv, playerStatsDiv, gameOverDiv, pointScorerModal].forEach(el => { if(el) el.classList.add('hidden'); });
         updateDisplay();
     }
 
-    function updateDisplay() {
+    function updateDisplay() { /* ... same as previous (button states, text, visibility) ... */
         if (!document.body.contains(settingsDiv)) return; // Safety check
 
-        // Update text content based on gameState
+        // Update text content
         displayTeamAName.textContent = gameState.teamAName; displayTeamBName.textContent = gameState.teamBName;
         scoreTeamANameH3.textContent = gameState.teamAName; scoreTeamBNameH3.textContent = gameState.teamBName;
         matchTitle.textContent = `Match: ${gameState.teamAName} vs ${gameState.teamBName}`;
@@ -330,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Control button states
         const buttonsLocked = gameState.gameOver || gameState.selectingScorer || !gameState.matchStarted;
         pointButtons.forEach(btn => btn.disabled = buttonsLocked);
-        // Defence buttons are inside dynamic lists, select them within updateDisplay if possible or rely on renderPlayerList disabling
         document.querySelectorAll('.defence-btn').forEach(btn => btn.disabled = gameState.gameOver || gameState.selectingScorer);
         undoPointBtn.disabled = gameState.history.length === 0 || buttonsLocked;
         undoDefenceBtn.disabled = gameState.defenceHistory.length === 0 || buttonsLocked;
@@ -346,75 +321,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderPlayerList(players, ulElement, team, includeButton) { /* ... same as previous ... */
-        if(!ulElement) return;
-        ulElement.innerHTML = '';
-        if (!players) return;
+        if(!ulElement) return; ulElement.innerHTML = ''; if (!players) return;
         players.forEach((player, index) => {
-            const li = document.createElement('li');
-            const nameSpan = document.createElement('span');
-            nameSpan.className = includeButton ? 'player-name' : 'player-stat-name';
-            nameSpan.textContent = player.name;
-            li.appendChild(nameSpan);
-            const statsContainer = document.createElement('div');
-            statsContainer.className = includeButton ? 'live-stats-line' : 'player-stat-values';
-            const pointsDiv = document.createElement(includeButton ? 'div' : 'span');
-            pointsDiv.className = 'player-points';
-            pointsDiv.innerHTML = `Pts: <span>${player.points}</span>`;
-            statsContainer.appendChild(pointsDiv);
-            const defenceDiv = document.createElement(includeButton ? 'div' : 'span');
-            defenceDiv.className = 'player-defences';
-            defenceDiv.innerHTML = `Def: <span>${player.defences}</span>`;
-            statsContainer.appendChild(defenceDiv);
+            const li = document.createElement('li'); const nameSpan = document.createElement('span');
+            nameSpan.className = includeButton ? 'player-name' : 'player-stat-name'; nameSpan.textContent = player.name; li.appendChild(nameSpan);
+            const statsContainer = document.createElement('div'); statsContainer.className = includeButton ? 'live-stats-line' : 'player-stat-values';
+            const pointsDiv = document.createElement(includeButton ? 'div' : 'span'); pointsDiv.className = 'player-points'; pointsDiv.innerHTML = `Pts: <span>${player.points}</span>`; statsContainer.appendChild(pointsDiv);
+            const defenceDiv = document.createElement(includeButton ? 'div' : 'span'); defenceDiv.className = 'player-defences'; defenceDiv.innerHTML = `Def: <span>${player.defences}</span>`; statsContainer.appendChild(defenceDiv);
             li.appendChild(statsContainer);
-            if (includeButton) {
-                const defenceBtn = document.createElement('button');
-                defenceBtn.className = 'defence-btn';
-                defenceBtn.textContent = '+ Def';
-                defenceBtn.dataset.team = team;
-                defenceBtn.dataset.index = index;
-                defenceBtn.disabled = gameState.gameOver || gameState.selectingScorer;
-                defenceBtn.addEventListener('click', handleDefenceClick); // Re-add listener
-                li.appendChild(defenceBtn);
-            }
-            ulElement.appendChild(li);
-        });
+            if (includeButton) { const defenceBtn = document.createElement('button'); defenceBtn.className = 'defence-btn'; defenceBtn.textContent = '+ Def'; defenceBtn.dataset.team = team; defenceBtn.dataset.index = index; defenceBtn.disabled = gameState.gameOver || gameState.selectingScorer; defenceBtn.addEventListener('click', handleDefenceClick); li.appendChild(defenceBtn); }
+            ulElement.appendChild(li); });
     }
 
-
-    function handleStartGame() {
-        // Read game settings
-        const settings = {
-            totalSets: parseInt(totalSetsSelect.value, 10),
-            pointsPerSet: parseInt(pointsPerSetInput.value, 10),
-            pointsFinalSet: parseInt(pointsFinalSetInput.value, 10),
-        };
-        // Read team names and players DIRECTLY from input fields
-        // These fields will contain either manual input or preset data loaded by the dropdown listener
-        const teamAName = teamANameInput.value.trim() || "Team A";
-        const teamBName = teamBNameInput.value.trim() || "Team B";
-        const playersA = parsePlayerNames(teamAPlayersTextarea.value);
-        const playersB = parsePlayerNames(teamBPlayersTextarea.value);
-
-        // Validation
+    function handleStartGame() { /* ... same as previous ... */
+        const settings = { totalSets: parseInt(totalSetsSelect.value, 10), pointsPerSet: parseInt(pointsPerSetInput.value, 10), pointsFinalSet: parseInt(pointsFinalSetInput.value, 10) };
+        const teamAName = teamANameInput.value.trim() || "Team A"; const teamBName = teamBNameInput.value.trim() || "Team B";
+        const playersA = parsePlayerNames(teamAPlayersTextarea.value); const playersB = parsePlayerNames(teamBPlayersTextarea.value);
         if (isNaN(settings.totalSets) || settings.totalSets <= 0 || isNaN(settings.pointsPerSet) || settings.pointsPerSet <= 0 || isNaN(settings.pointsFinalSet) || settings.pointsFinalSet <= 0) { alert("Invalid sets/points."); return; }
         if (playersA.length === 0 || playersB.length === 0) { alert("Add players for both teams."); return; }
         if (settings.totalSets > 1 && settings.pointsPerSet === settings.pointsFinalSet && !confirm(`Warning: Regular & final set need ${settings.pointsPerSet} pts. OK?`)) { return; }
-
-        // Reset state (keeping config settings)
-        resetGameToSettings();
-
-        // Apply validated game settings and TEAM DATA read from inputs
-        Object.assign(gameState, settings); // Apply set/point config
-        gameState.teamAName = teamAName;    // Apply name from input
-        gameState.teamBName = teamBName;    // Apply name from input
-        gameState.playersA = playersA;      // Apply players from textarea
-        gameState.playersB = playersB;      // Apply players from textarea
-
-        // Start the match state
-        gameState.matchStarted = true;
-        gameState.gameOver = false;
-        gameState.selectingScorer = false;
-        updateDisplay(); // Show game view
+        resetGameToSettings(); Object.assign(gameState, settings); gameState.teamAName = teamAName; gameState.teamBName = teamBName; gameState.playersA = playersA; gameState.playersB = playersB;
+        gameState.matchStarted = true; gameState.gameOver = false; gameState.selectingScorer = false; updateDisplay();
     }
 
     function saveCurrentStateToHistory() { /* ... same as previous ... */
@@ -431,48 +358,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showPointScorerModal(scoringTeam) { /* ... same as previous ... */
         if (gameState.gameOver || gameState.selectingScorer) return;
-        gameState.selectingScorer = true;
-        modalTeamName.textContent = scoringTeam === 'A' ? gameState.teamAName : gameState.teamBName;
+        gameState.selectingScorer = true; modalTeamName.textContent = scoringTeam === 'A' ? gameState.teamAName : gameState.teamBName;
         const players = scoringTeam === 'A' ? gameState.playersA : gameState.playersB;
         const listElement = scoringTeam === 'A' ? modalPlayerListA : modalPlayerListB;
         const otherListElement = scoringTeam === 'A' ? modalPlayerListB : modalPlayerListA;
-        listElement.innerHTML = '';
-        if (players) { players.forEach((player, index) => { const li = document.createElement('li'); li.textContent = player.name; li.addEventListener('click', () => handlePlayerSelectedForPoint(scoringTeam, index)); listElement.appendChild(li); }); }
-        listElement.classList.remove('hidden'); otherListElement.classList.add('hidden');
-        updateDisplay();
+        listElement.innerHTML = ''; if (players) { players.forEach((player, index) => { const li = document.createElement('li'); li.textContent = player.name; li.addEventListener('click', () => handlePlayerSelectedForPoint(scoringTeam, index)); listElement.appendChild(li); }); }
+        listElement.classList.remove('hidden'); otherListElement.classList.add('hidden'); updateDisplay();
     }
 
     function handlePlayerSelectedForPoint(team, playerIndex) { /* ... same as previous ... */
-         if (!gameState.selectingScorer || gameState.gameOver) return;
+        if (!gameState.selectingScorer || gameState.gameOver) return;
         saveCurrentStateToHistory();
         const players = team === 'A' ? gameState.playersA : gameState.playersB;
         if (!players || !players[playerIndex]) { handleCancelPointSelection(); return; }
         const scorerName = players[playerIndex].name;
         if (team === 'A') { gameState.teamAScore++; players[playerIndex].points++; } else { gameState.teamBScore++; players[playerIndex].points++; }
-        gameState.lastScorer = { team, playerIndex, playerName: scorerName };
-        gameState.selectingScorer = false;
+        gameState.lastScorer = { team, playerIndex, playerName: scorerName }; gameState.selectingScorer = false;
         checkSetWin(); updateDisplay();
     }
 
     function handleCancelPointSelection() { /* ... same as previous ... */
-        if (!gameState.selectingScorer) return;
-        gameState.selectingScorer = false; updateDisplay();
+        if (!gameState.selectingScorer) return; gameState.selectingScorer = false; updateDisplay();
     }
 
-    function checkSetWin() { /* ... same as previous ... */
+    // --- Modified checkSetWin ---
+    function checkSetWin() {
         const pointsNeeded = (gameState.currentSet === gameState.totalSets && gameState.totalSets > 1) ? gameState.pointsToWinFinalSet : gameState.pointsToWinSet;
-        const scoreA = gameState.teamAScore, scoreB = gameState.teamBScore; let setWon = false;
-        if (scoreA >= pointsNeeded && scoreA >= scoreB + 2) { gameState.teamASets++; setWon = true; } else if (scoreB >= pointsNeeded && scoreB >= scoreA + 2) { gameState.teamBSets++; setWon = true; }
-        if (setWon && !checkMatchWin()) { gameState.currentSet++; gameState.teamAScore = 0; gameState.teamBScore = 0; gameState.lastScorer = null; }
+        const scoreA = gameState.teamAScore;
+        const scoreB = gameState.teamBScore;
+        let setWon = false;
+
+        if (scoreA >= pointsNeeded && scoreA >= scoreB + 2) {
+            gameState.teamASets++;
+            setWon = true;
+        } else if (scoreB >= pointsNeeded && scoreB >= scoreA + 2) {
+            gameState.teamBSets++;
+            setWon = true;
+        }
+
+        if (setWon) {
+            // --- NEW: Record the final score for the set that just ended ---
+            gameState.setResults.push({
+                setNumber: gameState.currentSet,
+                scoreA: scoreA, // Score before reset
+                scoreB: scoreB  // Score before reset
+            });
+            // --- End NEW ---
+
+            if (!checkMatchWin()) { // If match not over, proceed to next set
+                gameState.currentSet++;
+                gameState.teamAScore = 0;
+                gameState.teamBScore = 0;
+                gameState.lastScorer = null;
+            }
+        }
     }
 
     function checkMatchWin() { /* ... same as previous ... */
         const setsNeededToWin = Math.ceil(gameState.totalSets / 2);
-        if (gameState.teamASets >= setsNeededToWin || gameState.teamBSets >= setsNeededToWin) { gameState.gameOver = true; displayGameOver(); return true; }
+        if (gameState.teamASets >= setsNeededToWin || gameState.teamBSets >= setsNeededToWin) {
+            // --- Potential Edge Case: If the *very last* point wins the match, the last set's score might not have been recorded yet in checkSetWin
+            // --- Let's record it here just in case ---
+            const lastSetResult = gameState.setResults.find(r => r.setNumber === gameState.currentSet);
+            if (!lastSetResult) {
+                 gameState.setResults.push({
+                    setNumber: gameState.currentSet,
+                    scoreA: gameState.teamAScore, // Current score is final score
+                    scoreB: gameState.teamBScore
+                });
+            }
+            // --- End Edge Case Handling ---
+            gameState.gameOver = true;
+            displayGameOver(); // Trigger game over display
+            return true;
+        }
         return false;
     }
 
-    function handleDefenceClick(event) { /* ... same as previous ... */
+     function handleDefenceClick(event) { /* ... same as previous ... */
          if (gameState.gameOver || gameState.selectingScorer) return;
         const { team, index } = event.target.dataset; const playerIndex = parseInt(index, 10);
         const playerList = team === 'A' ? gameState.playersA : gameState.playersB;
@@ -497,43 +460,62 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${potm.name} (${potm.teamName}) with ${potm.points} Points & ${potm.defences} Defences (Total: ${maxCombinedScore})`;
     }
 
-    function displayGameOver() { /* ... same as previous ... */
+    // --- Modified displayGameOver ---
+    function displayGameOver() {
         const winner = gameState.teamASets > gameState.teamBSets ? gameState.teamAName : gameState.teamBName;
         winnerMessageP.textContent = `${winner} wins the match!`;
-        finalScoreP.textContent = `Final Score: ${gameState.teamASets} - ${gameState.teamBSets}`;
+        finalScoreP.textContent = `Final Score: ${gameState.teamASets} - ${gameState.teamBSets}`; // Overall sets
         playerOfTheMatchP.textContent = `Player of the Match: ${determinePlayerOfTheMatch()}`;
+
+        // --- NEW: Populate Set Scores ---
+        finalSetScoresDiv.innerHTML = ''; // Clear previous scores
+        if (gameState.setResults.length > 0) {
+            gameState.setResults.forEach(result => {
+                const margin = Math.abs(result.scoreA - result.scoreB);
+                const setP = document.createElement('p');
+                // Display Winner Bold? Optional styling choice
+                const scoreText = result.scoreA > result.scoreB
+                                  ? `<strong>${result.scoreA}</strong> - ${result.scoreB}`
+                                  : `${result.scoreA} - <strong>${result.scoreB}</strong>`;
+                setP.innerHTML = `Set ${result.setNumber}: ${scoreText} <span class="margin">(Margin: ${margin})</span>`;
+                finalSetScoresDiv.appendChild(setP);
+            });
+        } else {
+            finalSetScoresDiv.innerHTML = '<p>No completed sets recorded.</p>';
+        }
+        // --- End NEW ---
+
+        // Populate Final Player Stats
         finalStatsTeamANameH4.textContent = gameState.teamAName;
         finalStatsTeamBNameH4.textContent = gameState.teamBName;
-        renderPlayerList(gameState.playersA, finalStatsListAUL, 'A', false); // Render final stats
+        renderPlayerList(gameState.playersA, finalStatsListAUL, 'A', false); // No buttons
         renderPlayerList(gameState.playersB, finalStatsListBUL, 'B', false);
-        gameState.gameOver = true; gameState.matchStarted = false; gameState.selectingScorer = false;
+
+        // Final state update
+        gameState.gameOver = true;
+        gameState.matchStarted = false;
+        gameState.selectingScorer = false;
         updateDisplay(); // Show game over section
     }
 
-    function downloadResultsAsImage() { /* ... same as previous, ensure html2canvas options are robust ... */
+    function downloadResultsAsImage() { /* ... same as previous ... */
         if (typeof html2canvas === 'undefined') { alert("Error: html2canvas library not available."); return; }
         if (!gameState.gameOver) return;
         const elementToCapture = gameOverDiv;
         const options = { backgroundColor: '#ffffff', useCORS: true, logging: false, scale: window.devicePixelRatio || 1, scrollX: 0, scrollY: -window.scrollY, windowWidth: elementToCapture.scrollWidth, windowHeight: elementToCapture.scrollHeight };
-        console.log("Capturing element:", elementToCapture, "with options:", options);
-        downloadResultsBtn.disabled = true; newGameSettingsBtn.disabled = true; // Disable buttons during capture
+        downloadResultsBtn.disabled = true; newGameSettingsBtn.disabled = true;
         html2canvas(elementToCapture, options).then(canvas => {
             const imageDataUrl = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.href = imageDataUrl;
+            const link = document.createElement('a'); link.href = imageDataUrl;
             const filename = `Volleyball_Results_${gameState.teamAName}_vs_${gameState.teamBName}.png`.replace(/[^a-z0-9_.-]/gi, '_');
-            link.download = filename;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            console.log("Download triggered for:", filename);
+            link.download = filename; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }).catch(error => {
             console.error('Error capturing element with html2canvas:', error); alert(`Failed to generate image: ${error}`);
-        }).finally(() => { // Re-enable buttons
-             downloadResultsBtn.disabled = !gameState.gameOver || typeof html2canvas === 'undefined'; // Re-set based on state
-             newGameSettingsBtn.disabled = false;
-             // updateDisplay(); // Could call updateDisplay if needed, but button state logic might suffice
+        }).finally(() => {
+            downloadResultsBtn.disabled = !gameState.gameOver || typeof html2canvas === 'undefined'; // Re-set state
+            newGameSettingsBtn.disabled = false;
         });
     }
-
 
     // --- Event Listeners Setup ---
     startGameBtn.addEventListener('click', handleStartGame);
@@ -544,13 +526,11 @@ document.addEventListener('DOMContentLoaded', () => {
     cancelPointSelectionBtn.addEventListener('click', handleCancelPointSelection);
     pointScorerModal.addEventListener('click', (e) => { if (e.target === pointScorerModal) handleCancelPointSelection(); });
     downloadResultsBtn.addEventListener('click', downloadResultsAsImage);
-    // NEW Listeners for team selection dropdowns
     selectTeamA.addEventListener('change', handleTeamSelectionChange);
     selectTeamB.addEventListener('change', handleTeamSelectionChange);
 
-
     // --- Initial Load ---
-    populateTeamSelectors(); // Populate dropdowns first
-    resetGameToSettings(); // Initialize the app state
+    populateTeamSelectors(); // Populate dropdowns
+    resetGameToSettings(); // Initialize
 
 });
